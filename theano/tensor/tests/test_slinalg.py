@@ -189,7 +189,7 @@ class test_Solve(utt.InferShapeTester):
                                                dtype=config.floatX)],
                                 self.op_class,
                                 warn=False)
-        
+
     def test_solve_correctness(self):
         if not imported_scipy:
             raise SkipTest("Scipy needed for the Cholesky op.")
@@ -210,7 +210,7 @@ class test_Solve(utt.InferShapeTester):
         upper_solve_func = theano.function([U,b],y_upper)
 
         b_val = numpy.asarray(rng.rand(5, 1), dtype=config.floatX)
-        
+
         # 1-test general case
         A_val = numpy.asarray(rng.rand(5, 5), dtype=config.floatX)
         # positive definite matrix:
@@ -227,3 +227,22 @@ class test_Solve(utt.InferShapeTester):
         U_val = scipy.linalg.cholesky(A_val, lower=False)
         assert numpy.allclose(scipy.linalg.solve_triangular(U_val, b_val, lower=False),
                               upper_solve_func(U_val, b_val))
+
+
+def test_tag_solve_triangular():
+    cholesky_lower = Cholesky(lower=True)
+    cholesky_upper = Cholesky(lower=False)
+    A = tensor.matrix('A')
+    x = tensor.vector('x')
+    L = cholesky_lower(A)
+    U = cholesky_upper(A)
+    b1 = solve(L, x)
+    b2 = solve(U, x)
+    f = theano.function([A,x], b1)
+    for node in f.maker.fgraph.toposort():
+        if isinstance(node.op, Solve):
+            assert node.op.A_structure == 'lower_triangular'
+    f = theano.function([A,x], b2)
+    for node in f.maker.fgraph.toposort():
+        if isinstance(node.op, Solve):
+            assert node.op.A_structure == 'upper_triangular'

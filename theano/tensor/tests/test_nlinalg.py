@@ -12,6 +12,8 @@ from theano.tensor.basic import _allclose
 from theano.tests.test_rop import break_op
 from theano.tests import unittest_tools as utt
 from theano import config
+from theano.tensor import DimShuffle
+
 
 from theano.tensor.nlinalg import ( MatrixInverse,
                                     matrix_inverse,
@@ -507,3 +509,15 @@ class T_NormTests(unittest.TestCase):
             t_n = f(A[2][i])
             n_n = numpy.linalg.norm(A[2][i], A[3][i])
             assert _allclose(n_n, t_n)
+
+
+def test_transinv_to_invtrans():
+    X = tensor.matrix('X')
+    Y = tensor.nlinalg.matrix_inverse(X)
+    Z = Y.transpose()
+    f = theano.function([X], Z)
+    for node in f.maker.fgraph.toposort():
+        if isinstance(node.op, MatrixInverse):
+            assert isinstance(node.inputs[0].owner.op, DimShuffle)
+        if isinstance(node.op, DimShuffle):
+            assert node.inputs[0].name == 'X'

@@ -699,3 +699,15 @@ def norm(x,ord):
             raise ValueError(0)
     elif ndim > 2:
         raise NotImplementedError("We don't support norm witn ndim > 2")
+
+
+@register_canonicalize
+@local_optimizer([DimShuffle])
+def transinv_to_invtrans(node):
+    if isinstance(node.op, DimShuffle):
+        if node.op.new_order == (1, 0):
+            A, = node.inputs
+            if A.owner:
+                if isinstance(A.owner.op, MatrixInverse):
+                    X, = A.owner.inputs
+                    return [A.owner.op(node.op(X))]

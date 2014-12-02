@@ -180,7 +180,7 @@ class Solve(Op):
         else:
             rval = scipy.linalg.solve(A, b)
         output_storage[0][0] = rval
-        
+
     # computes shape of x where x = inv(A) * b
     def infer_shape(self, node, shapes):
         Ashape, Bshape = shapes
@@ -336,3 +336,29 @@ def kron(a, b):
                          o.shape[1] * o.shape[3]) +
                         tuple([o.shape[i] for i in range(4, o.ndim)]))
     return o
+
+
+@register_stabilize
+@register_canonicalize
+@local_optimizer([Solve])
+def tag_solve_triangular(node):
+    """
+    If a general solve() is applied to the output of a cholesky op, then
+    replace it with a triangular solve.
+    """
+    if node.op == solve:
+        if node.op.A_structure == 'general':
+            A, b = node.inputs  # result is solution Ax=b
+            if A.owner and isinstance(A.owner.op, type(cholesky)):
+                if A.owner.op.lower:
+                    return [Solve('lower_triangular')(A, b)]
+                else:
+                    return [Solve('upper_triangular')(A, b)]
+            if (A.owner and isinstance(A.owner.op, DimShuffle)
+                and A.owner.op.new_order == (1, 0)):
+                A_T, = A.owner.inputs
+                if A_T.owner and isinstance(A_T.owner.op, type(cholesky)):
+                    if A_T.owner.op.lower:
+                        return [Solve('upper_triangular')(A, b)]
+                    else:
+                        return [Solve('lower_triangular')(A, b)]
