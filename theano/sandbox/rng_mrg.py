@@ -1331,7 +1331,6 @@ class MRG_RandomStreams(object):
         check that the elements are non-negative, less than 1, or
         sum to 1. passing pvals = [[-2., 2.]] will result in
         sampling [[0, 0]]
-
         """
         if pvals is None:
             raise TypeError("You have to specify pvals")
