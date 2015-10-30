@@ -146,10 +146,10 @@ class MultinomialFromUniform(Op):
             c = (t - cummul) - y;
             cummul = t;
 
-            if (cummul > 1.)
-            {
-                PyErr_Format(PyExc_ValueError, "sum(pvals) > 1.0");
-            }
+            // if (cummul > 1.)
+            // {
+            //     PyErr_Format(PyExc_ValueError, "sum(pvals) > 1.0");
+            // }
         }
         } // END NESTED SCOPE
         """ % locals()
@@ -185,8 +185,8 @@ class MultinomialFromUniform(Op):
             z[0][n, -1] = waiting
             cummul += pvals[n, (nb_outcomes - 1)]
 
-            if cummul > 1.:
-                raise ValueError("sum(pvals) > 1.0")
+            # if cummul > 1.:
+            #     raise ValueError("sum(pvals) > 1.0")
 
 
 class GpuMultinomialFromUniform(MultinomialFromUniform, GpuOp):
@@ -226,7 +226,7 @@ class GpuMultinomialFromUniform(MultinomialFromUniform, GpuOp):
 
     def c_code_cache_version(self):
         return (9,)
-
+        
     def c_support_code_apply(self, node, nodename):
         return """
         static __global__ void k_multi_warp_%(nodename)s(
@@ -276,10 +276,10 @@ class GpuMultinomialFromUniform(MultinomialFromUniform, GpuOp):
                 c = (t - cummul) - y;
                 cummul = t;
 
-                if (cummul > 1.)
-                {
-                    *err = 0xFFFF;
-                }
+                // if (cummul > 1.)
+                // {
+                //     *err = 0xFFFF;
+                // }
             }
         }
         """ % locals()
